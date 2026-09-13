@@ -45,7 +45,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
 }
 
 export function MapView() {
-  const { toggleActivity, isCompleted } = useTrip();
+  const { completeActivity, isCompleted } = useTrip();
   const [filter, setFilter] = useState<"all" | "day1" | "day2">("all");
 
   const visibleDays = trip.days.filter((d) => filter === "all" || filter === d.id);
@@ -109,16 +109,22 @@ export function MapView() {
                       >
                         🚶 Ver ruta hasta aquí
                       </a>
-                      <button
-                        onClick={() => toggleActivity(day.id, activity.id)}
-                        className="rounded-lg px-2 py-1.5 text-center text-xs font-bold"
-                        style={{
-                          background: done ? "var(--color-cream-soft)" : dayColor(day),
-                          color: done ? "var(--color-ink-soft)" : "white",
-                        }}
-                      >
-                        {done ? "↺ Marcar pendiente" : "☑️ Marcar como hecho"}
-                      </button>
+                      {done ? (
+                        <span
+                          className="rounded-lg px-2 py-1.5 text-center text-xs font-bold"
+                          style={{ background: "var(--color-cream-soft)", color: "var(--color-ink-soft)" }}
+                        >
+                          ✓ Completado
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => completeActivity(day.id, activity.id)}
+                          className="rounded-lg px-2 py-1.5 text-center text-xs font-bold text-white"
+                          style={{ background: dayColor(day) }}
+                        >
+                          ☑️ Marcar como hecho
+                        </button>
+                      )}
                     </div>
                   </Popup>
                 </Marker>

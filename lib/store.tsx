@@ -9,12 +9,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { packingList as defaultPackingList } from "./data/packing";
+import type { PackingItem } from "./types";
 
 const STORAGE_KEY = "lisboa-trip-state-v1";
 
 interface PersistedState {
   completed: Record<string, string[]>;
-  packing: string[];
+  packingChecked: string[];
+  packingItems: PackingItem[];
   darkMode: boolean;
   travelMode: boolean;
   activeDay: "day1" | "day2";
@@ -22,11 +25,22 @@ interface PersistedState {
 
 const DEFAULT_STATE: PersistedState = {
   completed: { day1: [], day2: [] },
-  packing: [],
+  packingChecked: [],
+  packingItems: defaultPackingList,
   darkMode: false,
   travelMode: false,
   activeDay: "day1",
 };
+
+function makePackingId(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `custom-${slug || "item"}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
 
 function loadState(): PersistedState {
   if (typeof window === "undefined") return DEFAULT_STATE;
@@ -38,6 +52,10 @@ function loadState(): PersistedState {
       ...DEFAULT_STATE,
       ...parsed,
       completed: { ...DEFAULT_STATE.completed, ...(parsed.completed ?? {}) },
+      packingItems:
+        Array.isArray(parsed.packingItems) && parsed.packingItems.length > 0
+          ? parsed.packingItems
+          : DEFAULT_STATE.packingItems,
     };
   } catch {
     return DEFAULT_STATE;
@@ -47,14 +65,18 @@ function loadState(): PersistedState {
 interface TripContextValue {
   hydrated: boolean;
   completed: Record<string, string[]>;
-  packing: string[];
+  packingItems: PackingItem[];
+  packingChecked: string[];
   darkMode: boolean;
   travelMode: boolean;
   activeDay: "day1" | "day2";
   isCompleted: (dayId: string, activityId: string) => boolean;
-  toggleActivity: (dayId: string, activityId: string) => void;
+  completeActivity: (dayId: string, activityId: string) => void;
   isPacked: (itemId: string) => boolean;
   togglePacking: (itemId: string) => void;
+  addPackingItem: (name: string) => void;
+  editPackingItem: (itemId: string, name: string) => void;
+  removePackingItem: (itemId: string) => void;
   setDarkMode: (v: boolean) => void;
   setTravelMode: (v: boolean) => void;
   setActiveDay: (v: "day1" | "day2") => void;
@@ -89,24 +111,53 @@ export function TripProvider({ children }: { children: ReactNode }) {
     [state.completed]
   );
 
-  const toggleActivity = useCallback((dayId: string, activityId: string) => {
+  // One-way: an activity can be marked done to advance to the next one, but
+  // never un-marked — there's no "go back" in the trip flow.
+  const completeActivity = useCallback((dayId: string, activityId: string) => {
     setState((prev) => {
       const current = prev.completed[dayId] ?? [];
-      const next = current.includes(activityId)
-        ? current.filter((id) => id !== activityId)
-        : [...current, activityId];
-      return { ...prev, completed: { ...prev.completed, [dayId]: next } };
+      if (current.includes(activityId)) return prev;
+      return { ...prev, completed: { ...prev.completed, [dayId]: [...current, activityId] } };
     });
   }, []);
 
-  const isPacked = useCallback((itemId: string) => state.packing.includes(itemId), [state.packing]);
+  const isPacked = useCallback(
+    (itemId: string) => state.packingChecked.includes(itemId),
+    [state.packingChecked]
+  );
 
   const togglePacking = useCallback((itemId: string) => {
     setState((prev) => ({
       ...prev,
-      packing: prev.packing.includes(itemId)
-        ? prev.packing.filter((id) => id !== itemId)
-        : [...prev.packing, itemId],
+      packingChecked: prev.packingChecked.includes(itemId)
+        ? prev.packingChecked.filter((id) => id !== itemId)
+        : [...prev.packingChecked, itemId],
+    }));
+  }, []);
+
+  const addPackingItem = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setState((prev) => ({
+      ...prev,
+      packingItems: [...prev.packingItems, { id: makePackingId(trimmed), name: trimmed }],
+    }));
+  }, []);
+
+  const editPackingItem = useCallback((itemId: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setState((prev) => ({
+      ...prev,
+      packingItems: prev.packingItems.map((item) => (item.id === itemId ? { ...item, name: trimmed } : item)),
+    }));
+  }, []);
+
+  const removePackingItem = useCallback((itemId: string) => {
+    setState((prev) => ({
+      ...prev,
+      packingItems: prev.packingItems.filter((item) => item.id !== itemId),
+      packingChecked: prev.packingChecked.filter((id) => id !== itemId),
     }));
   }, []);
 
@@ -126,19 +177,36 @@ export function TripProvider({ children }: { children: ReactNode }) {
     () => ({
       hydrated,
       completed: state.completed,
-      packing: state.packing,
+      packingItems: state.packingItems,
+      packingChecked: state.packingChecked,
       darkMode: state.darkMode,
       travelMode: state.travelMode,
       activeDay: state.activeDay,
       isCompleted,
-      toggleActivity,
+      completeActivity,
       isPacked,
       togglePacking,
+      addPackingItem,
+      editPackingItem,
+      removePackingItem,
       setDarkMode,
       setTravelMode,
       setActiveDay,
     }),
-    [hydrated, state, isCompleted, toggleActivity, isPacked, togglePacking, setDarkMode, setTravelMode, setActiveDay]
+    [
+      hydrated,
+      state,
+      isCompleted,
+      completeActivity,
+      isPacked,
+      togglePacking,
+      addPackingItem,
+      editPackingItem,
+      removePackingItem,
+      setDarkMode,
+      setTravelMode,
+      setActiveDay,
+    ]
   );
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;

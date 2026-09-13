@@ -11,7 +11,7 @@ import { getActivityStatus, nowMinutes } from "@/lib/time";
 import { useNow } from "@/lib/store";
 
 export default function ItinerarioPage() {
-  const { activeDay, setActiveDay, completed, toggleActivity, hydrated } = useTrip();
+  const { activeDay, setActiveDay, completed, completeActivity, hydrated } = useTrip();
   const now = useNow();
   const day = getDay(activeDay);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -21,16 +21,16 @@ export default function ItinerarioPage() {
   const places = day.activities.filter((a) => a.countsAsPlace);
   const doneCount = places.filter((a) => completedIds.has(a.id)).length;
 
-  function handleToggle(activityId: string, index: number) {
-    toggleActivity(day.id, activityId);
-    const wasCompleted = completedIds.has(activityId);
-    if (!wasCompleted) {
-      const nextActivity = day.activities[index + 1];
-      if (nextActivity) {
-        setTimeout(() => {
-          cardRefs.current[nextActivity.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 250);
-      }
+  // One-way: marking an activity done advances to the next one. Already-done
+  // activities can't be un-marked, so this only ever fires on the way forward.
+  function handleComplete(activityId: string, index: number) {
+    if (completedIds.has(activityId)) return;
+    completeActivity(day.id, activityId);
+    const nextActivity = day.activities[index + 1];
+    if (nextActivity) {
+      setTimeout(() => {
+        cardRefs.current[nextActivity.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 250);
     }
   }
 
@@ -82,7 +82,7 @@ export default function ItinerarioPage() {
                   status={status}
                   completed={completedIds.has(activity.id)}
                   accent={day.accent}
-                  onToggle={() => handleToggle(activity.id, index)}
+                  onComplete={() => handleComplete(activity.id, index)}
                   cardRef={(el) => {
                     cardRefs.current[activity.id] = el;
                   }}

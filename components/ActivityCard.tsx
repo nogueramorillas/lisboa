@@ -11,14 +11,14 @@ export function ActivityCard({
   status,
   completed,
   accent,
-  onToggle,
+  onComplete,
   cardRef,
 }: {
   activity: Activity;
   status: ActivityStatus;
   completed: boolean;
   accent: "rose" | "blue";
-  onToggle: () => void;
+  onComplete: () => void;
   cardRef?: (el: HTMLDivElement | null) => void;
 }) {
   const accentVar = accent === "rose" ? "var(--color-rose)" : "var(--color-blue)";
@@ -69,12 +69,13 @@ export function ActivityCard({
         </div>
 
         <button
-          onClick={onToggle}
-          aria-label={completed ? "Marcar como pendiente" : "Marcar como hecho"}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-90 ${
+          onClick={onComplete}
+          disabled={completed}
+          aria-label={completed ? "Completado" : "Marcar como hecho"}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
             completed
-              ? "border-transparent text-white animate-pop"
-              : "border-[var(--color-border)] text-transparent"
+              ? "cursor-default border-transparent text-white animate-pop"
+              : "border-[var(--color-border)] text-transparent active:scale-90"
           }`}
           style={{ background: completed ? accentVar : "transparent" }}
         >

@@ -1,15 +1,37 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { trip } from "@/lib/data/trip";
+import { useState } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useTrip } from "@/lib/store";
 import { Header } from "@/components/Header";
 
 export default function ListaPage() {
-  const { isPacked, togglePacking, hydrated } = useTrip();
-  const total = trip.packingList.length;
-  const done = hydrated ? trip.packingList.filter((i) => isPacked(i.id)).length : 0;
-  const pct = Math.round((done / total) * 100);
+  const { packingItems, isPacked, togglePacking, addPackingItem, editPackingItem, removePackingItem, hydrated } =
+    useTrip();
+  const [newItem, setNewItem] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const total = packingItems.length;
+  const done = hydrated ? packingItems.filter((i) => isPacked(i.id)).length : 0;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  function handleAdd() {
+    if (!newItem.trim()) return;
+    addPackingItem(newItem);
+    setNewItem("");
+  }
+
+  function startEdit(id: string, currentName: string) {
+    setEditingId(id);
+    setEditValue(currentName);
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    editPackingItem(editingId, editValue);
+    setEditingId(null);
+  }
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col pb-28 sm:max-w-2xl">
@@ -18,7 +40,9 @@ export default function ListaPage() {
       <main className="flex flex-1 flex-col gap-4 px-4 pt-3">
         <div>
           <h1 className="text-2xl font-extrabold">🧳 Maleta</h1>
-          <p className="text-sm text-[var(--color-ink-soft)]">Marca cada cosa cuando la metas en la maleta</p>
+          <p className="text-sm text-[var(--color-ink-soft)]">
+            Marca cada cosa cuando la metas en la maleta — Gisela y Denis podéis añadir o editar lo que falte
+          </p>
         </div>
 
         <div className="rounded-2xl bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
@@ -36,28 +60,109 @@ export default function ListaPage() {
           </div>
         </div>
 
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAdd();
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            placeholder="Añadir algo a la maleta…"
+            className="min-w-0 flex-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--color-terracota)]"
+          />
+          <button
+            type="submit"
+            aria-label="Añadir"
+            disabled={!newItem.trim()}
+            className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl bg-[var(--color-terracota)] text-white shadow-[var(--shadow-soft)] transition-transform active:scale-90 disabled:opacity-40"
+          >
+            <Plus size={20} strokeWidth={2.5} />
+          </button>
+        </form>
+
         <div className="flex flex-col gap-2">
-          {trip.packingList.map((item) => {
+          {packingItems.map((item) => {
             const packed = hydrated && isPacked(item.id);
+            const isEditing = editingId === item.id;
+
+            if (isEditing) {
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-2 rounded-2xl border border-[var(--color-terracota)] bg-[var(--color-surface)] p-2.5 shadow-[var(--shadow-soft)]"
+                >
+                  <input
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    className="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-transparent px-3 py-2 text-[15px] outline-none"
+                  />
+                  <button
+                    onClick={saveEdit}
+                    aria-label="Guardar"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-terracota)] text-white"
+                  >
+                    <Check size={16} strokeWidth={3} />
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    aria-label="Cancelar"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-cream-soft)] text-[var(--color-ink-soft)]"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+                </div>
+              );
+            }
+
             return (
-              <button
+              <div
                 key={item.id}
-                onClick={() => togglePacking(item.id)}
-                className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left shadow-[var(--shadow-soft)] transition-all active:scale-[0.98] ${
-                  packed ? "border-transparent bg-[var(--color-terracota-soft)]" : "border-[var(--color-border)] bg-[var(--color-surface)]"
+                className={`flex items-center gap-2 rounded-2xl border p-2.5 shadow-[var(--shadow-soft)] transition-all ${
+                  packed
+                    ? "border-transparent bg-[var(--color-terracota-soft)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface)]"
                 }`}
               >
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                    packed ? "border-transparent bg-[var(--color-terracota)] text-white animate-pop" : "border-[var(--color-border)] text-transparent"
-                  }`}
+                <button
+                  onClick={() => togglePacking(item.id)}
+                  className="flex flex-1 items-center gap-3 py-1 text-left active:scale-[0.98]"
                 >
-                  <Check size={16} strokeWidth={3} />
-                </span>
-                <span className={`text-[15px] font-medium ${packed ? "text-[var(--color-ink-soft)] line-through" : ""}`}>
-                  {item.name}
-                </span>
-              </button>
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                      packed
+                        ? "border-transparent bg-[var(--color-terracota)] text-white animate-pop"
+                        : "border-[var(--color-border)] text-transparent"
+                    }`}
+                  >
+                    <Check size={16} strokeWidth={3} />
+                  </span>
+                  <span className={`text-[15px] font-medium ${packed ? "text-[var(--color-ink-soft)] line-through" : ""}`}>
+                    {item.name}
+                  </span>
+                </button>
+                <button
+                  onClick={() => startEdit(item.id, item.name)}
+                  aria-label="Editar"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--color-ink-soft)] active:scale-90"
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  onClick={() => removePackingItem(item.id)}
+                  aria-label="Eliminar"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--color-ink-soft)] active:scale-90"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             );
           })}
         </div>

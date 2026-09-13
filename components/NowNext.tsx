@@ -9,7 +9,7 @@ import { DayProgress } from "./DayProgress";
 import { StatusBadge } from "./StatusBadge";
 
 export function NowNext({ day }: { day: Day }) {
-  const { completed, toggleActivity, travelMode, hydrated } = useTrip();
+  const { completed, completeActivity, travelMode, hydrated } = useTrip();
   const now = useNow();
 
   const accentVar = day.accent === "rose" ? "var(--color-rose)" : "var(--color-blue)";
@@ -84,7 +84,7 @@ export function NowNext({ day }: { day: Day }) {
         </p>
 
         <button
-          onClick={() => toggleActivity(day.id, focus.id)}
+          onClick={() => completeActivity(day.id, focus.id)}
           className="flex items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-extrabold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-95"
           style={{ background: accentVar }}
         >
