@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, CalendarDays, MapPinned, Luggage } from "lucide-react";
+import { Home, Map, CalendarDays, MapPinned, Luggage, Ticket } from "lucide-react";
 
 const ITEMS = [
   { href: "/", label: "Inicio", icon: Home },
@@ -10,6 +10,7 @@ const ITEMS = [
   { href: "/itinerario", label: "Itinerario", icon: CalendarDays },
   { href: "/mapa", label: "Mapa", icon: MapPinned },
   { href: "/lista", label: "Lista", icon: Luggage },
+  { href: "/tarjeta", label: "Tarjeta", icon: Ticket },
 ];
 
 export function BottomNav() {
