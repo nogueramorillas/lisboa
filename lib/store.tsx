@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { packingList as defaultPackingList } from "./data/packing";
-import type { PackingItem } from "./types";
+import type { PackingItem, PackingOwner } from "./types";
 
 const STORAGE_KEY = "lisboa-trip-state-v1";
 
@@ -52,9 +52,16 @@ function loadState(): PersistedState {
       ...DEFAULT_STATE,
       ...parsed,
       completed: { ...DEFAULT_STATE.completed, ...(parsed.completed ?? {}) },
+      // Migrate packing items saved before the Gisela/Denis split — anything
+      // without an owner keeps its place under Gisela's maleta instead of
+      // vanishing.
       packingItems:
         Array.isArray(parsed.packingItems) && parsed.packingItems.length > 0
-          ? parsed.packingItems
+          ? parsed.packingItems.map((item: Partial<PackingItem>) => ({
+              id: item.id,
+              name: item.name,
+              owner: item.owner === "denis" ? "denis" : "gisela",
+            }))
           : DEFAULT_STATE.packingItems,
     };
   } catch {
@@ -72,9 +79,10 @@ interface TripContextValue {
   activeDay: "day1" | "day2";
   isCompleted: (dayId: string, activityId: string) => boolean;
   completeActivity: (dayId: string, activityId: string) => void;
+  uncompleteActivity: (dayId: string, activityId: string) => void;
   isPacked: (itemId: string) => boolean;
   togglePacking: (itemId: string) => void;
-  addPackingItem: (name: string) => void;
+  addPackingItem: (name: string, owner: PackingOwner) => void;
   editPackingItem: (itemId: string, name: string) => void;
   removePackingItem: (itemId: string) => void;
   setDarkMode: (v: boolean) => void;
@@ -111,13 +119,23 @@ export function TripProvider({ children }: { children: ReactNode }) {
     [state.completed]
   );
 
-  // One-way: an activity can be marked done to advance to the next one, but
-  // never un-marked — there's no "go back" in the trip flow.
+  // One-way by default: an activity can be marked done to advance to the next
+  // one — there's no casual "go back" in the trip flow. uncompleteActivity
+  // still exists as a deliberate correction, gated behind a confirm step in
+  // the UI, for when something gets marked done by mistake.
   const completeActivity = useCallback((dayId: string, activityId: string) => {
     setState((prev) => {
       const current = prev.completed[dayId] ?? [];
       if (current.includes(activityId)) return prev;
       return { ...prev, completed: { ...prev.completed, [dayId]: [...current, activityId] } };
+    });
+  }, []);
+
+  const uncompleteActivity = useCallback((dayId: string, activityId: string) => {
+    setState((prev) => {
+      const current = prev.completed[dayId] ?? [];
+      if (!current.includes(activityId)) return prev;
+      return { ...prev, completed: { ...prev.completed, [dayId]: current.filter((id) => id !== activityId) } };
     });
   }, []);
 
@@ -135,12 +153,12 @@ export function TripProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const addPackingItem = useCallback((name: string) => {
+  const addPackingItem = useCallback((name: string, owner: PackingOwner) => {
     const trimmed = name.trim();
     if (!trimmed) return;
     setState((prev) => ({
       ...prev,
-      packingItems: [...prev.packingItems, { id: makePackingId(trimmed), name: trimmed }],
+      packingItems: [...prev.packingItems, { id: makePackingId(trimmed), name: trimmed, owner }],
     }));
   }, []);
 
@@ -184,6 +202,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       activeDay: state.activeDay,
       isCompleted,
       completeActivity,
+      uncompleteActivity,
       isPacked,
       togglePacking,
       addPackingItem,
@@ -198,6 +217,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       state,
       isCompleted,
       completeActivity,
+      uncompleteActivity,
       isPacked,
       togglePacking,
       addPackingItem,

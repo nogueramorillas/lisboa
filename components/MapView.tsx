@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { RotateCcw } from "lucide-react";
 import { trip } from "@/lib/data/trip";
 import { useTrip } from "@/lib/store";
 import { buildMapsUrl } from "@/lib/maps";
 import { endTime, formatDuration } from "@/lib/time";
-import type { Day } from "@/lib/types";
+import { useConfirmToggle } from "@/lib/useConfirmToggle";
+import type { Activity, Day } from "@/lib/types";
 
 function dayColor(day: Day) {
   return day.accent === "rose" ? "#d16a7a" : "#2f6f9e";
@@ -33,6 +35,68 @@ function makeIcon(emoji: string, color: string, muted: boolean) {
   });
 }
 
+function MarkerPopupBody({
+  day,
+  activity,
+  done,
+  onComplete,
+  onUndo,
+}: {
+  day: Day;
+  activity: Activity;
+  done: boolean;
+  onComplete: () => void;
+  onUndo: () => void;
+}) {
+  const { armed, trigger } = useConfirmToggle(onUndo);
+
+  return (
+    <div className="flex min-w-[180px] flex-col gap-1.5 p-0.5">
+      <span className="text-xs font-bold uppercase text-[var(--color-ink-soft)]">
+        {day.emoji} {day.id === "day1" ? "Día 1" : "Día 2"}
+      </span>
+      <span className="text-sm font-bold">{activity.name}</span>
+      <span className="text-xs text-[var(--color-ink-soft)]">
+        {activity.time} – {endTime(activity)} · {formatDuration(activity.durationMin)}
+      </span>
+      <a
+        href={buildMapsUrl(activity.address, "walking")}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1 rounded-lg bg-[var(--color-azul)] px-2 py-1.5 text-center text-xs font-bold text-white"
+      >
+        🚶 Ver ruta hasta aquí
+      </a>
+      {done ? (
+        <button
+          onClick={trigger}
+          className="flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-center text-xs font-bold"
+          style={{
+            background: armed ? "var(--color-terracota)" : "var(--color-cream-soft)",
+            color: armed ? "white" : "var(--color-ink-soft)",
+          }}
+        >
+          {armed ? (
+            <>
+              <RotateCcw size={13} /> Confirmar
+            </>
+          ) : (
+            "✓ Completado"
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={onComplete}
+          className="rounded-lg px-2 py-1.5 text-center text-xs font-bold text-white"
+          style={{ background: dayColor(day) }}
+        >
+          ☑️ Marcar como hecho
+        </button>
+      )}
+    </div>
+  );
+}
+
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
   useMemo(() => {
@@ -45,7 +109,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
 }
 
 export function MapView() {
-  const { completeActivity, isCompleted } = useTrip();
+  const { completeActivity, uncompleteActivity, isCompleted } = useTrip();
   const [filter, setFilter] = useState<"all" | "day1" | "day2">("all");
 
   const visibleDays = trip.days.filter((d) => filter === "all" || filter === d.id);
@@ -93,39 +157,13 @@ export function MapView() {
                   icon={makeIcon(activity.emoji, dayColor(day), done)}
                 >
                   <Popup>
-                    <div className="flex min-w-[180px] flex-col gap-1.5 p-0.5">
-                      <span className="text-xs font-bold uppercase text-[var(--color-ink-soft)]">
-                        {day.emoji} {day.id === "day1" ? "Día 1" : "Día 2"}
-                      </span>
-                      <span className="text-sm font-bold">{activity.name}</span>
-                      <span className="text-xs text-[var(--color-ink-soft)]">
-                        {activity.time} – {endTime(activity)} · {formatDuration(activity.durationMin)}
-                      </span>
-                      <a
-                        href={buildMapsUrl(activity.address, "walking")}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 rounded-lg bg-[var(--color-azul)] px-2 py-1.5 text-center text-xs font-bold text-white"
-                      >
-                        🚶 Ver ruta hasta aquí
-                      </a>
-                      {done ? (
-                        <span
-                          className="rounded-lg px-2 py-1.5 text-center text-xs font-bold"
-                          style={{ background: "var(--color-cream-soft)", color: "var(--color-ink-soft)" }}
-                        >
-                          ✓ Completado
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => completeActivity(day.id, activity.id)}
-                          className="rounded-lg px-2 py-1.5 text-center text-xs font-bold text-white"
-                          style={{ background: dayColor(day) }}
-                        >
-                          ☑️ Marcar como hecho
-                        </button>
-                      )}
-                    </div>
+                    <MarkerPopupBody
+                      day={day}
+                      activity={activity}
+                      done={done}
+                      onComplete={() => completeActivity(day.id, activity.id)}
+                      onUndo={() => uncompleteActivity(day.id, activity.id)}
+                    />
                   </Popup>
                 </Marker>
               );

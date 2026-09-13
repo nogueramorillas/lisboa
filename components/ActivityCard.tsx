@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, RotateCcw } from "lucide-react";
 import type { Activity } from "@/lib/types";
 import type { ActivityStatus } from "@/lib/time";
 import { endTime, formatDuration } from "@/lib/time";
+import { useConfirmToggle } from "@/lib/useConfirmToggle";
 import { StatusBadge } from "./StatusBadge";
 
 export function ActivityCard({
@@ -12,6 +13,7 @@ export function ActivityCard({
   completed,
   accent,
   onComplete,
+  onUndo,
   cardRef,
 }: {
   activity: Activity;
@@ -19,10 +21,12 @@ export function ActivityCard({
   completed: boolean;
   accent: "rose" | "blue";
   onComplete: () => void;
+  onUndo: () => void;
   cardRef?: (el: HTMLDivElement | null) => void;
 }) {
   const accentVar = accent === "rose" ? "var(--color-rose)" : "var(--color-blue)";
   const accentSoft = accent === "rose" ? "var(--color-rose-soft)" : "var(--color-blue-soft)";
+  const { armed, trigger } = useConfirmToggle(onUndo);
 
   return (
     <div
@@ -64,22 +68,33 @@ export function ActivityCard({
                 {activity.note}
               </span>
             )}
-            <StatusBadge status={status} />
+            {completed && armed ? (
+              <span className="rounded-full bg-[var(--color-terracota)] px-2 py-0.5 text-[11px] font-bold text-white">
+                Toca otra vez para desmarcar
+              </span>
+            ) : (
+              <StatusBadge status={status} />
+            )}
           </div>
         </div>
 
         <button
-          onClick={onComplete}
-          disabled={completed}
-          aria-label={completed ? "Completado" : "Marcar como hecho"}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+          onClick={completed ? trigger : onComplete}
+          aria-label={completed ? (armed ? "Confirmar que desmarcas" : "Completado — toca para corregir") : "Marcar como hecho"}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-90 ${
             completed
-              ? "cursor-default border-transparent text-white animate-pop"
-              : "border-[var(--color-border)] text-transparent active:scale-90"
+              ? armed
+                ? "border-transparent bg-[var(--color-terracota)] text-white"
+                : "border-transparent text-white animate-pop"
+              : "border-[var(--color-border)] text-transparent"
           }`}
-          style={{ background: completed ? accentVar : "transparent" }}
+          style={{ background: completed && !armed ? accentVar : undefined }}
         >
-          <Check size={18} strokeWidth={3} className={completed ? "opacity-100" : "opacity-0"} />
+          {completed && armed ? (
+            <RotateCcw size={16} strokeWidth={3} />
+          ) : (
+            <Check size={18} strokeWidth={3} className={completed ? "opacity-100" : "opacity-0"} />
+          )}
         </button>
       </div>
     </div>

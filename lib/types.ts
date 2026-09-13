@@ -40,9 +40,12 @@ export interface Day {
   routes: RouteInfo[];
 }
 
+export type PackingOwner = "gisela" | "denis";
+
 export interface PackingItem {
   id: string;
   name: string;
+  owner: PackingOwner;
 }
 
 export interface Trip {

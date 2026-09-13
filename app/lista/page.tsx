@@ -4,21 +4,29 @@ import { useState } from "react";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useTrip } from "@/lib/store";
 import { Header } from "@/components/Header";
+import type { PackingOwner } from "@/lib/types";
+
+const PEOPLE: { id: PackingOwner; label: string; emoji: string }[] = [
+  { id: "gisela", label: "Gisela", emoji: "🧳" },
+  { id: "denis", label: "Denis", emoji: "🧳" },
+];
 
 export default function ListaPage() {
   const { packingItems, isPacked, togglePacking, addPackingItem, editPackingItem, removePackingItem, hydrated } =
     useTrip();
+  const [person, setPerson] = useState<PackingOwner>("gisela");
   const [newItem, setNewItem] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const total = packingItems.length;
-  const done = hydrated ? packingItems.filter((i) => isPacked(i.id)).length : 0;
+  const items = packingItems.filter((i) => i.owner === person);
+  const total = items.length;
+  const done = hydrated ? items.filter((i) => isPacked(i.id)).length : 0;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
   function handleAdd() {
     if (!newItem.trim()) return;
-    addPackingItem(newItem);
+    addPackingItem(newItem, person);
     setNewItem("");
   }
 
@@ -41,8 +49,24 @@ export default function ListaPage() {
         <div>
           <h1 className="text-2xl font-extrabold">🧳 Maleta</h1>
           <p className="text-sm text-[var(--color-ink-soft)]">
-            Marca cada cosa cuando la metas en la maleta — Gisela y Denis podéis añadir o editar lo que falte
+            Cada uno tiene su propia maleta — añade o edita lo que falte
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {PEOPLE.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPerson(p.id)}
+              className={`flex-1 rounded-2xl py-2 text-sm font-bold transition-all ${
+                person === p.id
+                  ? "bg-[var(--color-terracota)] text-white shadow-[var(--shadow-soft)]"
+                  : "bg-[var(--color-surface)] text-[var(--color-ink-soft)]"
+              }`}
+            >
+              {p.emoji} {p.label}
+            </button>
+          ))}
         </div>
 
         <div className="rounded-2xl bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
@@ -70,7 +94,7 @@ export default function ListaPage() {
           <input
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
-            placeholder="Añadir algo a la maleta…"
+            placeholder={`Añadir algo a la maleta de ${person === "gisela" ? "Gisela" : "Denis"}…`}
             className="min-w-0 flex-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--color-terracota)]"
           />
           <button
@@ -84,7 +108,13 @@ export default function ListaPage() {
         </form>
 
         <div className="flex flex-col gap-2">
-          {packingItems.map((item) => {
+          {items.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-ink-soft)]">
+              Aún no hay nada en la maleta de {person === "gisela" ? "Gisela" : "Denis"}. Añade el primer artículo
+              arriba.
+            </p>
+          )}
+          {items.map((item) => {
             const packed = hydrated && isPacked(item.id);
             const isEditing = editingId === item.id;
 

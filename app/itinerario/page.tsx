@@ -11,7 +11,7 @@ import { getActivityStatus, nowMinutes } from "@/lib/time";
 import { useNow } from "@/lib/store";
 
 export default function ItinerarioPage() {
-  const { activeDay, setActiveDay, completed, completeActivity, hydrated } = useTrip();
+  const { activeDay, setActiveDay, completed, completeActivity, uncompleteActivity, hydrated } = useTrip();
   const now = useNow();
   const day = getDay(activeDay);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -83,6 +83,7 @@ export default function ItinerarioPage() {
                   completed={completedIds.has(activity.id)}
                   accent={day.accent}
                   onComplete={() => handleComplete(activity.id, index)}
+                  onUndo={() => uncompleteActivity(day.id, activity.id)}
                   cardRef={(el) => {
                     cardRefs.current[activity.id] = el;
                   }}
