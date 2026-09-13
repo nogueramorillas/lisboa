@@ -35,6 +35,8 @@ export interface SalePoint {
   name: string;
   address: string;
   mapsQuery: string;
+  lat: number;
+  lng: number;
   line: string;
   hours: string;
   walkMin: number | null;
@@ -49,6 +51,8 @@ export const salePoints: SalePoint[] = [
     name: "Estación de Metro Martim Moniz",
     address: "Praça Martim Moniz, Lisboa",
     mapsQuery: "Estação de Metro Martim Moniz, Lisboa, Portugal",
+    lat: 38.7157,
+    lng: -9.1367,
     line: "🟢 Línea Verde",
     hours: "06:30 – 01:00",
     walkMin: 3,
@@ -61,6 +65,8 @@ export const salePoints: SalePoint[] = [
     name: "Estación de Metro Intendente",
     address: "Largo do Intendente, Lisboa",
     mapsQuery: "Estação de Metro Intendente, Lisboa, Portugal",
+    lat: 38.7186,
+    lng: -9.1373,
     line: "🟢 Línea Verde",
     hours: "06:30 – 01:00",
     walkMin: 8,
@@ -72,6 +78,8 @@ export const salePoints: SalePoint[] = [
     name: "Estación de Metro Rossio",
     address: "Praça Dom Pedro IV, Lisboa",
     mapsQuery: "Estação de Metro Rossio, Lisboa, Portugal",
+    lat: 38.7145,
+    lng: -9.1394,
     line: "🟢 Línea Verde",
     hours: "06:30 – 01:00",
     walkMin: 11,
@@ -83,6 +91,8 @@ export const salePoints: SalePoint[] = [
     name: "Estación de Metro Restauradores",
     address: "Praça dos Restauradores, Lisboa",
     mapsQuery: "Estação de Metro Restauradores, Lisboa, Portugal",
+    lat: 38.715,
+    lng: -9.1425,
     line: "🔵 Línea Azul",
     hours: "06:30 – 01:00",
     walkMin: 12,
@@ -94,6 +104,8 @@ export const salePoints: SalePoint[] = [
     name: "Estación de Metro Aeroporto",
     address: "Aeroporto Humberto Delgado, Lisboa",
     mapsQuery: "Estação de Metro Aeroporto, Lisboa, Portugal",
+    lat: 38.7684,
+    lng: -9.1289,
     line: "🔴 Línea Roja",
     hours: "06:30 – 01:00",
     walkMin: null,

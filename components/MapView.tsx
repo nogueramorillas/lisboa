@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Ticket } from "lucide-react";
 import { trip } from "@/lib/data/trip";
 import { useTrip } from "@/lib/store";
 import { buildMapsUrl } from "@/lib/maps";
 import { endTime, formatDuration } from "@/lib/time";
 import { useConfirmToggle } from "@/lib/useConfirmToggle";
+import { HOTEL_ADDRESS, salePoints, type SalePoint } from "@/lib/data/transportCard";
 import type { Activity, Day } from "@/lib/types";
 
 function dayColor(day: Day) {
@@ -97,6 +98,44 @@ function MarkerPopupBody({
   );
 }
 
+function SalePointPopup({ point }: { point: SalePoint }) {
+  const mapsUrl = buildMapsUrl(point.mapsQuery, "walking");
+  const fromHotelUrl = buildMapsUrl(point.mapsQuery, "walking", HOTEL_ADDRESS);
+
+  return (
+    <div className="flex min-w-[180px] flex-col gap-1.5 p-0.5">
+      <span className="text-xs font-bold uppercase text-[var(--color-ink-soft)]">🎫 Punto de venta</span>
+      <span className="text-sm font-bold">{point.name}</span>
+      <span className="text-xs text-[var(--color-ink-soft)]">
+        {point.line} · {point.hours}
+      </span>
+      {point.walkMin !== null && (
+        <span className="text-xs text-[var(--color-ink-soft)]">
+          🚶 ≈ {point.walkMin} min desde el hotel
+        </span>
+      )}
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1 rounded-lg bg-[var(--color-terracota)] px-2 py-1.5 text-center text-xs font-bold text-white"
+      >
+        📍 Abrir en Google Maps
+      </a>
+      {point.walkMin !== null && (
+        <a
+          href={fromHotelUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg bg-[var(--color-terracota-soft)] px-2 py-1.5 text-center text-xs font-bold text-[var(--color-terracota)]"
+        >
+          🚶 Ruta desde el hotel
+        </a>
+      )}
+    </div>
+  );
+}
+
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
   useMemo(() => {
@@ -108,17 +147,22 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
+const SALE_POINT_COLOR = "#d9724c";
+
 export function MapView() {
   const { completeActivity, uncompleteActivity, isCompleted } = useTrip();
   const [filter, setFilter] = useState<"all" | "day1" | "day2">("all");
+  const [showSalePoints, setShowSalePoints] = useState(true);
 
   const visibleDays = trip.days.filter((d) => filter === "all" || filter === d.id);
-  const points = visibleDays.flatMap((d) => d.activities.map((a) => [a.lat, a.lng] as [number, number]));
+  const activityPoints = visibleDays.flatMap((d) => d.activities.map((a) => [a.lat, a.lng] as [number, number]));
+  const salePointCoords = showSalePoints ? salePoints.map((p) => [p.lat, p.lng] as [number, number]) : [];
+  const points = [...activityPoints, ...salePointCoords];
   const center: [number, number] = points[0] ?? [38.71, -9.14];
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2 px-4">
+      <div className="flex flex-wrap gap-2 px-4">
         {(
           [
             { key: "all", label: "🩷💙 Ambos" },
@@ -138,6 +182,15 @@ export function MapView() {
             {opt.label}
           </button>
         ))}
+        <button
+          onClick={() => setShowSalePoints((v) => !v)}
+          className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+            showSalePoints ? "text-white" : "bg-[var(--color-surface)] text-[var(--color-ink-soft)]"
+          }`}
+          style={{ background: showSalePoints ? SALE_POINT_COLOR : undefined }}
+        >
+          <Ticket size={13} /> Puntos de venta
+        </button>
       </div>
 
       <div className="mx-4 overflow-hidden rounded-3xl shadow-[var(--shadow-soft)]" style={{ height: "62dvh" }}>
@@ -147,6 +200,14 @@ export function MapView() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FitBounds points={points} />
+          {showSalePoints &&
+            salePoints.map((point) => (
+              <Marker key={point.id} position={[point.lat, point.lng]} icon={makeIcon("🎫", SALE_POINT_COLOR, false)}>
+                <Popup>
+                  <SalePointPopup point={point} />
+                </Popup>
+              </Marker>
+            ))}
           {visibleDays.map((day) =>
             day.activities.map((activity) => {
               const done = isCompleted(day.id, activity.id);
