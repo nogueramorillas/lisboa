@@ -1,0 +1,12 @@
+{
+  "name": "Lisboa en 2 días",
+  "short_name": "Lisboa",
+  "description": "Travel planner para nuestro viaje de 2 días a Lisboa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf5ea",
+  "theme_color": "#fbf5ea",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}

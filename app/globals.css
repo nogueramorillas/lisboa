@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-cream: #fbf5ea;
+  --color-cream-soft: #f4ead8;
+  --color-surface: #ffffff;
+  --color-ink: #2a2420;
+  --color-ink-soft: #6b6058;
+  --color-azul: #1b6079;
+  --color-azul-soft: #dbeef1;
+  --color-amarillo: #f2b94c;
+  --color-amarillo-soft: #fdf0d5;
+  --color-terracota: #d9724c;
+  --color-terracota-soft: #fae3d8;
+  --color-rose: #d16a7a;
+  --color-rose-soft: #f8e3e6;
+  --color-blue: #2f6f9e;
+  --color-blue-soft: #dfeaf3;
+  --color-border: rgba(42, 36, 32, 0.08);
+  --shadow-soft: 0 1px 2px rgba(42, 36, 32, 0.04), 0 8px 24px -12px rgba(42, 36, 32, 0.12);
+  --shadow-lift: 0 2px 6px rgba(42, 36, 32, 0.06), 0 16px 32px -16px rgba(42, 36, 32, 0.22);
+}
+
+.dark {
+  --color-cream: #17191c;
+  --color-cream-soft: #1f2226;
+  --color-surface: #22252a;
+  --color-ink: #f3ece0;
+  --color-ink-soft: #a8a099;
+  --color-azul: #6fb3ca;
+  --color-azul-soft: #203238;
+  --color-amarillo: #f2b94c;
+  --color-amarillo-soft: #332a17;
+  --color-terracota: #e58a63;
+  --color-terracota-soft: #362520;
+  --color-rose: #e28b9a;
+  --color-rose-soft: #33232a;
+  --color-blue: #7fb3d9;
+  --color-blue-soft: #1c2b36;
+  --color-border: rgba(243, 236, 224, 0.09);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px -12px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.25), 0 16px 32px -16px rgba(0, 0, 0, 0.55);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: var(--color-cream);
+  --color-cream-soft: var(--color-cream-soft);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-azul: var(--color-azul);
+  --color-azul-soft: var(--color-azul-soft);
+  --color-amarillo: var(--color-amarillo);
+  --color-amarillo-soft: var(--color-amarillo-soft);
+  --color-terracota: var(--color-terracota);
+  --color-terracota-soft: var(--color-terracota-soft);
+  --color-rose: var(--color-rose);
+  --color-rose-soft: var(--color-rose-soft);
+  --color-blue: var(--color-blue);
+  --color-blue-soft: var(--color-blue-soft);
+  --color-border: var(--color-border);
+  --font-sans: var(--font-jakarta);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-slide-up 0.35s ease-out both;
+}
+
+@keyframes pop-check {
+  0% {
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pop {
+  animation: pop-check 0.28s ease-out both;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Leaflet ships `mix-blend-mode: plus-lighter` on tile images (meant for a
+   dark-canvas trick); against our light page background it washes tiles out
+   to grey. Force normal blending so map tiles render with their real colors. */
+.leaflet-container img.leaflet-tile {
+  mix-blend-mode: normal !important;
+}
+
